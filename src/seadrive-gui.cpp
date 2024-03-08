@@ -625,6 +625,22 @@ bool SeadriveGui::initLog()
         return false;
     }
 
+  // On linux we must unmount the mount point dir before trying to create it,
+  // otherwise checkdir_with_mkdir would think it doesn't exist and try to
+  // create it, but the creation operation would fail.
+#if defined(Q_OS_LINUX)
+      QStringList umount_arguments;
+      umount_arguments << "-u" << seadriveRoot();
+      QProcess::execute("fusermount", umount_arguments);
+#endif
+
+#if defined(Q_OS_LINUX)
+  if (checkdir_with_mkdir(toCStr(seadriveRoot())) < 0) {
+      errorAndExit(tr("Failed to initialize: failed to create seadrive mount folder"));
+      return false;
+  }
+#endif
+
     if (applet_log_init(toCStr(seadrive_dir.absolutePath())) < 0) {
         errorAndExit(tr("Failed to initialize log: %1").arg(g_strerror(errno)));
         return false;
